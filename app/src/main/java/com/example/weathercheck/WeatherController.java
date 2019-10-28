@@ -70,17 +70,19 @@ public class WeatherController extends AppCompatActivity {
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-
-        if(requestCode == REQUEST_CODE){
-            if(grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED){
-                Log.d("WeatherApp", "onRequestPErmissionsResult() called, permission granted!! ");
-                getWeatherForCurrentLocation(); }
-            else{ Log.d("WeatherApp", "location access Permission denied"); }
+        String result;
+        if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                getWeatherForCurrentLocation();
+            } else if (grantResults[0] == PackageManager.PERMISSION_DENIED) {
+                // Permission Denied
+                if (ActivityCompat.shouldShowRequestPermissionRationale(this,
+                        Manifest.permission.WRITE_EXTERNAL_STORAGE)) {
+                    finish();
+                } else {
+                    finish();
+                }
+            }
         }
-        else{
-            Log.d("WeatherApp", "location access Permission denied!");
-        }
-    }
 
 
     private void getWeatherForCurrentLocation() {
@@ -141,6 +143,8 @@ public class WeatherController extends AppCompatActivity {
                 @Override
                 public void onSuccess(int statusCode, Header[] headers, JSONObject response){
                     Log.e("WeatherApp", "success! JSON: "+ response.toString());
+                    WeatherDataModel weatherData = WeatherDataModel.fromJSON(response);
+                    updateUIwithWeatherDetail(weatherData);
                 }
                 @Override
                 public void onFailure(int statusCode, Header[] headers, Throwable e, JSONObject response){
@@ -150,6 +154,16 @@ public class WeatherController extends AppCompatActivity {
 
                 }
             });
+        }
+
+
+        private void updateUIwithWeatherDetail(WeatherDataModel weather){
+           mTemperatureLabel.setText(weather.getmTemperature());
+           mCityLabel.setText(weather.getmCity());
+
+           int resourceIDforIcon = getResources().getIdentifier(weather.getmIconName(), "drawable", getPackageName());
+           mWeatherImage.setImageResource(resourceIDforIcon);
+
         }
 
 
