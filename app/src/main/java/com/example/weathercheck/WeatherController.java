@@ -74,7 +74,15 @@ public class WeatherController extends AppCompatActivity {
         super.onResume();
         Log.d("WeatherApp", "onResume() called.");
         Log.d("WeatherApp", "retrieving GPS location...");
-        getWeatherForCurrentLocation();
+        Intent myIntent = getIntent();
+        String city = myIntent.getStringExtra("city");
+
+        if(city != null){
+            getWeatherForNewCity(city);
+        }else {
+            getWeatherForCurrentLocation();
+        }
+
     }
 
     @Override
@@ -107,7 +115,7 @@ public class WeatherController extends AppCompatActivity {
 
                 RequestParams params = new RequestParams();
                 params.put("lat", latitudeFound);
-                params.put("long", longitudeFound);
+                params.put("lon", longitudeFound);
                 params.put("appid", APP_ID);
 
                 sendLocationDetailsToOpenWeather(params);
@@ -149,10 +157,10 @@ public class WeatherController extends AppCompatActivity {
             AsyncHttpClient client = new AsyncHttpClient();
 
             client.get(WEATHER_URL, params, new JsonHttpResponseHandler(){
-                //this method recieves one of two handlers, onSuccess or onFailure dependiing on HTTP response success
+                //this method receives one of two handlers, onSuccess or onFailure depending on HTTP response success
                 @Override
                 public void onSuccess(int statusCode, Header[] headers, JSONObject response){
-                    Log.e("WeatherApp", "success! JSON: "+ response.toString());
+                    Log.d("WeatherApp", "success! JSON: "+ response.toString());
                     WeatherDataModel weatherData = WeatherDataModel.fromJSON(response);
                     updateUIwithWeatherDetail(weatherData);
                 }
@@ -160,7 +168,7 @@ public class WeatherController extends AppCompatActivity {
                 public void onFailure(int statusCode, Header[] headers, Throwable e, JSONObject response){
                     Log.e("WeatherApp", e.toString());
                     Log.e("WeatherApp", "status code : "+statusCode);
-                    Toast.makeText(WeatherController.this, "Request to fetch location failed!", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(WeatherController.this, "Location not found, please check and try again!", Toast.LENGTH_SHORT).show();
 
                 }
             });
@@ -177,7 +185,19 @@ public class WeatherController extends AppCompatActivity {
         }
 
 
+        private void getWeatherForNewCity(String city){
 
+            RequestParams params = new RequestParams();
+            params.put("q", city);
+            params.put("appid", APP_ID);
+            sendLocationDetailsToOpenWeather(params);
+        }
 
+    @Override
+    protected void onPause() {
+        super.onPause();
+
+        if(locationManager !=null ) locationManager.removeUpdates(locationListener);
+    }
 }
 
