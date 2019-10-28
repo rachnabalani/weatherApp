@@ -14,6 +14,15 @@ import android.util.Log;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.TextView;
+import android.widget.Toast;
+
+import com.loopj.android.http.AsyncHttpClient;
+import com.loopj.android.http.JsonHttpResponseHandler;
+import com.loopj.android.http.RequestParams;
+
+import org.json.JSONObject;
+
+import cz.msebera.android.httpclient.Header;
 
 
 public class WeatherController extends AppCompatActivity {
@@ -47,9 +56,6 @@ public class WeatherController extends AppCompatActivity {
         mTemperatureLabel = (TextView) findViewById(R.id.tempTV);
         ImageButton changeCityButton = (ImageButton) findViewById(R.id.changeCityButton);
 
-
-        // TODO: Add an OnClickListener to the changeCityButton here:
-
     }
 
 
@@ -61,8 +67,20 @@ public class WeatherController extends AppCompatActivity {
         getWeatherForCurrentLocation();
     }
 
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
 
-    // TODO: Add getWeatherForNewCity(String city) here:
+        if(requestCode == REQUEST_CODE){
+            if(grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED){
+                Log.d("WeatherApp", "onRequestPErmissionsResult() called, permission granted!! ");
+                getWeatherForCurrentLocation(); }
+            else{ Log.d("WeatherApp", "location access Permission denied"); }
+        }
+        else{
+            Log.d("WeatherApp", "location access Permission denied!");
+        }
+    }
 
 
     private void getWeatherForCurrentLocation() {
@@ -75,21 +93,20 @@ public class WeatherController extends AppCompatActivity {
                 String longitudeFound = String.valueOf(location.getLongitude());
                 String latitudeFound = String.valueOf(location.getLatitude());
 
-                Log.d("WeatherApp", "latitude is: "+ latitudeFound);
-                Log.d("WeatherApp", "longitude is: "+ longitudeFound);
+                RequestParams params = new RequestParams();
+                params.put("lat", latitudeFound);
+                params.put("long", longitudeFound);
+                params.put("appid", APP_ID);
 
+                sendLocationDetailsToOpenWeather(params);
             }
 
             @Override
             public void onStatusChanged(String provider, int status, Bundle extras) {
-
             }
-
             @Override
             public void onProviderEnabled(String provider) {
-
             }
-
             @Override
             public void onProviderDisabled(String provider) {
                 Log.d("WeatherApp", "provider disabled. onProviderDisabled() called. ");
@@ -110,38 +127,31 @@ public class WeatherController extends AppCompatActivity {
             ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, REQUEST_CODE);
             //now wait until user grants permission/denies it. Basically waiting for an event to be triggered from user. Overriding
             //onRequestPermissionsResult elsewhere which will take care of this event trigger.
-
             return;
         }
             locationManager.requestLocationUpdates(LOCATION_PROVIDER, MIN_TIME, MIN_DISTANCE, locationListener);
     }
 
-    @Override
-    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
 
-        if(requestCode == REQUEST_CODE){
-            if(grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED){
-                Log.d("WeatherApp", "onRequestPErmissionsResult() called, permission granted!! ");
-                getWeatherForCurrentLocation();
-            }
-            else{
-                Log.d("WeatherApp", "location access Permission denied");
-            }
+        private void sendLocationDetailsToOpenWeather(RequestParams params){
+            AsyncHttpClient client = new AsyncHttpClient();
+
+            client.get(WEATHER_URL, params, new JsonHttpResponseHandler(){
+                //this method recieves one of two handlers, onSuccess or onFailure dependiing on HTTP response success
+                @Override
+                public void onSuccess(int statusCode, Header[] headers, JSONObject response){
+                    Log.e("WeatherApp", "success! JSON: "+ response.toString());
+                }
+                @Override
+                public void onFailure(int statusCode, Header[] headers, Throwable e, JSONObject response){
+                    Log.e("WeatherApp", e.toString());
+                    Log.e("WeatherApp", "status code : "+statusCode);
+                    Toast.makeText(WeatherController.this, "Request to fetch location failed!", Toast.LENGTH_SHORT).show();
+
+                }
+            });
         }
-        else{
-            Log.d("WeatherApp", "location access Permission denied!");
-        }
-    }
-    // TODO: Add letsDoSomeNetworking(RequestParams params) here:
 
-
-
-    // TODO: Add updateUI() here:
-
-
-
-    // TODO: Add onPause() here:
 
 
 
